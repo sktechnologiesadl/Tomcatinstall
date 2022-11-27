@@ -1,0 +1,50 @@
+---
+- name: Install the Tomcat
+  hosts: localhost
+  become: true
+  tasks:
+  - name: Download Java
+    get_url:
+      #url: http://download.oracle.com/otn-pub/java/jdk/8u60-b27/jdk-8u60-linux-x64.rpm
+      url: http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.rpm
+      dest: /opt/jdk-8u60-linux-x64.rpm
+      #headers: 'Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie'
+      headers: "Cookie: oraclelicense=accept-securebackup-cookie"
+  - name: Install Java
+    yum:
+      name: /opt/jdk-8u60-linux-x64.rpm
+      state: present
+  - name: Create a Directory of Tomcatinstall
+    ansible.builtin.file:
+      path: /opt/tominstall
+      state: directory
+      mode: '0755'
+  - name: Download and Install Tomcat Server
+    get_url:
+      url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.69/bin/apache-tomcat-9.0.69.tar.gz
+      dest: /opt/tominstall/apache-tomcat-9.0.69.tar.gz
+  - name: unzip the Tomcat zip file
+    ansible.builtin.unarchive:
+      src: /opt/tominstall/apache-tomcat-9.0.69.tar.gz
+      dest: /opt/tominstall
+  - name: Make the Symbolic like for Tomcat Start
+    ansible.builtin.file:
+      src: /opt/tominstall/apache-tomcat-9.0.69/bin/startup.sh
+      dest: /usr/bin/starttom
+      state: link
+  - name: Make the Symbolic like for Tomcat Stop
+    ansible.builtin.file:
+      src: /opt/tominstall/apache-tomcat-9.0.69/bin/shutdown.sh
+      dest: /usr/bin/stoptom
+      state: link 
+  - name: Start the Tomcat Service
+    shell:
+      cmd: starttom
+  - name: Comment the Manager app
+    ansible.builtin.file:
+      path: /opt/tominstall/apache-tomcat-9.0.62/webapps/manager/META-INF/context.xml
+      regexp: '^<Valve'
+        #line: '<!-- --> \2'
+      backrefs: yes
+      state: absent
+      backup: yes
